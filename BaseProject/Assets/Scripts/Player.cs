@@ -16,12 +16,13 @@ public class Player : MonoBehaviour
         projectileVelocity = 3;
 	}
 
-	// Update is called once per frame
-	void Update ()
+    // Update is called once per frame
+    void Update ()
     {
-		if (Input.GetButtonDown("Jump"))
+		if (Input.GetButtonDown("Fire1"))
         {
             GameObject bullet = (GameObject)Instantiate(projectilePrefab, transform.position, Quaternion.identity);
+            bullet.transform.Translate(new Vector3(0.25f, 0));
             Projectiles.Add(bullet);
         }
 
@@ -30,10 +31,10 @@ public class Player : MonoBehaviour
             GameObject goBullet = Projectiles[i];
             if (goBullet != null)
             {
-                goBullet.transform.Translate(new Vector3(0, 1) * Time.deltaTime * projectileVelocity);
+                goBullet.transform.Translate(new Vector3(1,0) * Time.deltaTime * projectileVelocity);
 
                 Vector3 bulletScreenPos = Camera.main.WorldToScreenPoint(goBullet.transform.position);
-                if (bulletScreenPos.y >= Screen.height || bulletScreenPos.y <= 0)
+                if (bulletScreenPos.x >= Screen.width || bulletScreenPos.x <= 0)
                 {
                     DestroyObject(goBullet);
                     Projectiles.Remove(goBullet);

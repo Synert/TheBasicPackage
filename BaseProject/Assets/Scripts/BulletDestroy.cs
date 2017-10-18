@@ -6,6 +6,14 @@ public class BulletDestroy : MonoBehaviour
 {
     void OnCollisionEnter2D(Collision2D other)
     {
-        DestroyObject(other.gameObject);
+        if (other.gameObject.tag == "Enemy")
+        {
+            DestroyObject(other.gameObject);
+            DestroyObject(gameObject);
+        }
+        else
+        {
+            DestroyObject(gameObject);
+        }
     }
 }
