@@ -63,51 +63,55 @@ public class MultiInputEditor : Editor {
 				SerializedProperty currentKeyList = currentKey.FindPropertyRelative ("key");
 				SerializedProperty axisInput = keys.GetArrayElementAtIndex (a).FindPropertyRelative ("axisInput");
 				SerializedProperty privateFunction = keys.GetArrayElementAtIndex (a).FindPropertyRelative ("privateFunction");
+				SerializedProperty offset = keys.GetArrayElementAtIndex (a).FindPropertyRelative ("offset");
+				SerializedProperty keyType = keys.GetArrayElementAtIndex (a).FindPropertyRelative ("keyType");
 
 				//allow closing of element data
-				GUI.backgroundColor = new Color(1,1,1,1);
-				GUILayout.BeginHorizontal(EditorStyles.helpBox);
+				GUI.backgroundColor = new Color (1, 1, 1, 1);
+				GUILayout.BeginHorizontal (EditorStyles.helpBox);
 				GUILayout.FlexibleSpace ();
-				if (GUILayout.Button ("Close Element " + a.ToString (), GUILayout.Width(300))) {
+				if (GUILayout.Button ("Close Element " + a.ToString (), GUILayout.Width (300))) {
 					visible.GetArrayElementAtIndex (a).boolValue = false;
 				}
 				GUILayout.FlexibleSpace ();
-				GUI.backgroundColor = new Color(0.9f,0.9f,0.9f,0.5f);
-				GUILayout.EndHorizontal();
+				GUI.backgroundColor = new Color (0.9f, 0.9f, 0.9f, 0.5f);
+				GUILayout.EndHorizontal ();
 
 				//start data section
 				GUILayout.BeginVertical (EditorStyles.helpBox);
 
-				if (!axisInput.boolValue) {
-					GUILayout.BeginHorizontal (EditorStyles.helpBox);
+				GUILayout.BeginHorizontal (EditorStyles.helpBox);
 
-					GUILayout.FlexibleSpace ();
-					//display adding for multiple keys
-					if (GUILayout.Button ("Add Key", GUILayout.Width (150))) {
-						//add new blank key data
-						currentKeyList.InsertArrayElementAtIndex (currentKeyList.arraySize);
-					}
-					if (GUILayout.Button ("Remove Key", GUILayout.Width (150))) {
-						//check if key data has data
-						if (currentKeyList.arraySize > 0) {
-							//remove last key data
-							currentKeyList.DeleteArrayElementAtIndex (currentKeyList.arraySize - 1);
-						}
-					}
-					GUILayout.FlexibleSpace ();
-
-					//split up the options
-					GUILayout.EndHorizontal ();
-					GUILayout.Space (2);
+				GUILayout.FlexibleSpace ();
+				//display adding for multiple keys
+				if (GUILayout.Button ("Add Key", GUILayout.Width (150))) {
+					//add new blank key data
+					currentKeyList.InsertArrayElementAtIndex (currentKeyList.arraySize);
+					offset.InsertArrayElementAtIndex (offset.arraySize);
+					keyType.InsertArrayElementAtIndex (keyType.arraySize);
 				}
+				if (GUILayout.Button ("Remove Key", GUILayout.Width (150))) {
+					//check if key data has data
+					if (currentKeyList.arraySize > 0) {
+						//remove last key data
+						currentKeyList.DeleteArrayElementAtIndex (currentKeyList.arraySize - 1);
+						offset.DeleteArrayElementAtIndex (offset.arraySize - 1);
+						keyType.DeleteArrayElementAtIndex (keyType.arraySize - 1);
+					}
+				}
+				GUILayout.FlexibleSpace ();
+
+				//split up the options
+				GUILayout.EndHorizontal ();
+				GUILayout.Space (2);
 
 				GUILayout.BeginHorizontal ();
 
 				//display bool for variable input
 				EditorGUILayout.LabelField ("Variable Input", GUILayout.Width (100));
-				keys.GetArrayElementAtIndex (a).FindPropertyRelative("variableInput").boolValue
+				keys.GetArrayElementAtIndex (a).FindPropertyRelative ("variableInput").boolValue
 					= EditorGUILayout.Toggle (keys.GetArrayElementAtIndex (a).FindPropertyRelative
-												("variableInput").boolValue, GUILayout.Width(20));
+												("variableInput").boolValue, GUILayout.Width (20));
 				
 				//split up the options
 				GUILayout.EndHorizontal ();
@@ -116,10 +120,10 @@ public class MultiInputEditor : Editor {
 
 				//display boo for private function
 				EditorGUILayout.LabelField ("Private Function", GUILayout.Width (100));
-				privateFunction.boolValue = EditorGUILayout.Toggle (privateFunction.boolValue, GUILayout.Width(20));
+				privateFunction.boolValue = EditorGUILayout.Toggle (privateFunction.boolValue, GUILayout.Width (20));
 
 				if (privateFunction.boolValue) {
-					EditorGUILayout.PropertyField (keys.GetArrayElementAtIndex (a).FindPropertyRelative ("privateFunctionName"), GUIContent.none, GUILayout.Width(190));
+					EditorGUILayout.PropertyField (keys.GetArrayElementAtIndex (a).FindPropertyRelative ("privateFunctionName"), GUIContent.none, GUILayout.Width (190));
 
 					//split up the options
 					GUILayout.EndHorizontal ();
@@ -137,65 +141,67 @@ public class MultiInputEditor : Editor {
 
 				//display bool for axis input
 				EditorGUILayout.LabelField ("Axis Input", GUILayout.Width (100));
-				axisInput.boolValue = EditorGUILayout.Toggle (axisInput.boolValue, GUILayout.Width(20));
+				axisInput.boolValue = EditorGUILayout.Toggle (axisInput.boolValue, GUILayout.Width (20));
 
 				if (axisInput.boolValue) {
 					EditorGUILayout.PropertyField (keys.GetArrayElementAtIndex (a).FindPropertyRelative ("axis"), GUIContent.none, GUILayout.Width (190));
 					keys.GetArrayElementAtIndex (a).FindPropertyRelative ("variableInput").boolValue = true;
 					privateFunction.boolValue = true;
-					GUILayout.EndHorizontal ();
-					GUILayout.EndVertical ();
-				} else {
+				}
 
 
-					//split up the options
-					GUILayout.EndHorizontal ();
-					GUILayout.Space (2);
+				//split up the options
+				GUILayout.EndHorizontal ();
+				GUILayout.Space (2);
+
+				GUILayout.BeginHorizontal ();
+
+				//display int field for max accepted keys per update
+				EditorGUILayout.LabelField ("Max Inputs Per Update", GUILayout.Width (135));
+				keys.GetArrayElementAtIndex (a).FindPropertyRelative ("keyInputsAccepted").intValue = 
+					EditorGUILayout.IntField (keys.GetArrayElementAtIndex (a).FindPropertyRelative ("keyInputsAccepted").intValue, GUILayout.Width (180));
+
+				//split up the options
+				GUILayout.EndHorizontal ();
+				GUILayout.Space (2);
+
+				//apply update to data
+				serializedObject.ApplyModifiedProperties ();
+
+				for (int b = 0; b < currentKeyList.arraySize; b++) {
 
 					GUILayout.BeginHorizontal ();
 
-					//display int field for max accepted keys per update
-					EditorGUILayout.LabelField ("Max Inputs Per Update", GUILayout.Width (135));
-					EditorGUILayout.IntField (keys.GetArrayElementAtIndex (a).FindPropertyRelative ("keyInputsAccepted").intValue, GUILayout.Width (180));
+					//display popup for key input
+					EditorGUILayout.LabelField ("Key", GUILayout.Width (40));
+					EditorGUILayout.PropertyField (currentKeyList.GetArrayElementAtIndex (b), GUIContent.none, GUILayout.Width (275));
+					EditorGUILayout.PropertyField (offset.GetArrayElementAtIndex (b), GUIContent.none, GUILayout.Width (40));
+					EditorGUILayout.PropertyField (keyType.GetArrayElementAtIndex (b), GUIContent.none, GUILayout.Width (100));
+
 
 					//split up the options
 					GUILayout.EndHorizontal ();
 					GUILayout.Space (2);
 
-					//apply update to data
-					serializedObject.ApplyModifiedProperties ();
-
-					for (int b = 0; b < currentKeyList.arraySize; b++) {
-
-						GUILayout.BeginHorizontal ();
-
-						//display popup for key input
-						EditorGUILayout.LabelField ("Key", GUILayout.Width (40));
-						EditorGUILayout.PropertyField (currentKeyList.GetArrayElementAtIndex (b), GUIContent.none, GUILayout.Width (275));
-
-						//split up the options
-						GUILayout.EndHorizontal ();
-						GUILayout.Space (2);
-
-					}
-
-					if (!privateFunction.boolValue) {
-						GUILayout.BeginHorizontal ();
-
-						//display string for key event
-						EditorGUILayout.LabelField ("Event", GUILayout.Width (40));
-						EditorGUILayout.PropertyField (currentKey.FindPropertyRelative ("keyEvent"), GUILayout.Width (415));
-
-
-						GUILayout.EndHorizontal ();
-					}
-
-					//end data section
-					GUILayout.EndVertical ();
-					GUILayout.Space (10);
-
-					serializedObject.ApplyModifiedProperties ();
 				}
+
+				if (!privateFunction.boolValue) {
+					GUILayout.BeginHorizontal ();
+
+					//display string for key event
+					EditorGUILayout.LabelField ("Event", GUILayout.Width (40));
+					EditorGUILayout.PropertyField (currentKey.FindPropertyRelative ("keyEvent"), GUILayout.Width (415));
+
+
+					GUILayout.EndHorizontal ();
+				}
+
+				//end data section
+				GUILayout.EndVertical ();
+				GUILayout.Space (10);
+
+				serializedObject.ApplyModifiedProperties ();
+
 			} else {
 				
 				//allow opening of element

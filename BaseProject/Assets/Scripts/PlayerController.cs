@@ -48,6 +48,66 @@ public class PlayerController : MonoBehaviour
 		horizontal = true;
 	}
 
+	void jump() {
+		if (!keyPressDown)
+		{
+			keyPressDown = true;
+			if (isOnGround || (canDoubleJump && enableDoubleJump || wallHitJump))
+			{
+				bool wallHit = false;
+				int wallHitDirection = 0;
+
+				bool leftWallHit = onLeftWall();
+				bool rightWallHit = onRightWall();
+
+				if (horizontal)
+				{
+					if (leftWallHit)
+					{
+						wallHit = true;
+						wallHitDirection = 1;
+					}
+					else if (rightWallHit)
+					{
+						wallHit = true;
+						wallHitDirection = -1;
+					}
+				}
+
+				if (!wallHit)
+				{
+					if (isOnGround || (canDoubleJump && enableDoubleJump))
+					{
+						GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, this.jumpSpeed);
+						jumpDuration = 0.0f;
+						canDoubleJump = true;
+					}
+				}
+				else
+				{
+					GetComponent<Rigidbody2D>().velocity = new Vector2(this.jumpSpeed * wallHitDirection, this.jumpSpeed);
+
+					jmpDuration = 0.0f;
+					canJumpVariable = true;
+				}
+
+				if (!isOnGround && !wallHit)
+				{
+					canDoubleJump = false;
+				}
+			}
+		}
+		else if (canJumpVariable)
+		{
+			jmpDuration += Time.deltaTime;
+
+			if (jmpDuration < this.jumpDuration / 1000)
+			{
+				GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, this.jumpSpeed);
+			}
+		}
+	}
+
 	// Update is called once per frame
 	void Update ()
     {
@@ -59,78 +119,14 @@ public class PlayerController : MonoBehaviour
             canDoubleJump = true;
         }
 
-        if (Input.GetKeyDown("w") || Input.GetKeyDown("joystick button 0"))
-        {
-            if (!keyPressDown)
-            {
-                keyPressDown = true;
-                if (isOnGround || (canDoubleJump && enableDoubleJump || wallHitJump))
-                {
-                    bool wallHit = false;
-                    int wallHitDirection = 0;
-
-                    bool leftWallHit = onLeftWall();
-                    bool rightWallHit = onRightWall();
-
-                    if (horizontal)
-                    {
-                        if (leftWallHit)
-                        {
-                            wallHit = true;
-                            wallHitDirection = 1;
-                        }
-                        else if (rightWallHit)
-                        {
-                            wallHit = true;
-                            wallHitDirection = -1;
-                        }
-                    }
-
-                    if (!wallHit)
-                    {
-                        if (isOnGround || (canDoubleJump && enableDoubleJump))
-                        {
-                            GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, this.jumpSpeed);
-                            jumpDuration = 0.0f;
-                            canDoubleJump = true;
-                        }
-                    }
-                    else
-                    {
-                        GetComponent<Rigidbody2D>().velocity = new Vector2(this.jumpSpeed * wallHitDirection, this.jumpSpeed);
-
-                        jmpDuration = 0.0f;
-                        canJumpVariable = true;
-                    }
-
-                    if (!isOnGround && !wallHit)
-                    {
-                        canDoubleJump = false;
-                    }
-                }
-            }
-            else if (canJumpVariable)
-            {
-                jmpDuration += Time.deltaTime;
-
-                if (jmpDuration < this.jumpDuration / 1000)
-                {
-                    GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, this.jumpSpeed);
-                }
-            }
-        }
-        else
-        {
-            keyPressDown = false;
-            canJumpVariable = false;
-        }
-
         if (Input.GetKeyDown("space"))
         {
 
         }
 
 		horizontal = false;
+		keyPressDown = false;
+		canJumpVariable = false;
     }
 
     private bool onGround()

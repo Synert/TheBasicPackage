@@ -18,29 +18,31 @@ public class MultiInput : MonoBehaviour {
 		if (Input.anyKey) {
 			foreach (keyInfo info in keys) {
 				int accepted = 0;
-				if (!info.axisInput) {
-					foreach (KeyCode key in info.key) {
-						//check if inputs check is less than max
-						if (accepted < info.keyInputsAccepted) {
-							if (Input.GetButton (key.ToString ())) {
-								if (info.keyEvent.GetPersistentEventCount () > 0) {
-									for (int a = 0; a < info.keyEvent.GetPersistentEventCount (); a++) {
-										activate (info, info.keyEvent.GetPersistentTarget (a), info.keyEvent.GetPersistentMethodName (a));
-									}
-								} else {
-									activate (info, null, null);
+				for (int a = 0; a < info.key.Count; a++) {//foreach (KeyCode key in info.key) {
+					KeyCode key = info.key[a];
+					//check if inputs check is less than max
+					if (accepted < info.keyInputsAccepted) {
+						if ((Input.GetKey (key) && info.keyType[a] == keyInputType.getKey) ||
+							(Input.GetKeyDown (key) && info.keyType[a] == keyInputType.getKeyDown) ||
+							(Input.GetKeyUp (key) && info.keyType[a] == keyInputType.getKeyUp)) {
+							if (info.keyEvent.GetPersistentEventCount () > 0) {
+								for (int b = 0; b < info.keyEvent.GetPersistentEventCount (); b++) {
+									activate (info, info.keyEvent.GetPersistentTarget (b), info.keyEvent.GetPersistentMethodName (b), a);
 								}
-								accepted++;
+							} else {
+								activate (info, null, null, a);
 							}
+							accepted++;
 						}
 					}
-				} else {
-					//check if axis has been used
+				}
+				//check if axis has been used
+				if (info.axisInput) {
 					if (Input.GetAxis (info.axis) != 0) {
 
 						//set variable to axis value
 						info.variable = Input.GetAxis (info.axis);
-						activate (info, null, null);
+						activate (info, null, null, -1);
 
 					}
 				}
@@ -48,7 +50,7 @@ public class MultiInput : MonoBehaviour {
 		}
 	}
 
-	void activate(keyInfo info, Object temp, string name) {
+	void activate(keyInfo info, Object temp, string name, int index) {
 			
 		//check if variable input or private function
 		if (info.variableInput || info.privateFunction) {
@@ -59,7 +61,11 @@ public class MultiInput : MonoBehaviour {
 				//check if variable input or not
 				if (info.variableInput) {
 					//invoke method based on function object
-					customObjectVariableInvoke (info);
+					if (index == -1) {
+						customObjectVariableInvoke (info, info.variable);
+					} else {
+						customObjectVariableInvoke (info, info.variable + info.offset[index]);
+					}
 				} else {
 					//invoke method based on function object
 					customObjectInvoke (info);
@@ -69,7 +75,11 @@ public class MultiInput : MonoBehaviour {
 				//check if variable input or not
 				if (info.variableInput) {
 					//invoke method based on event systems
-					customVariableInvoke (temp, name, info.variable);
+					if (index == -1) {
+						customVariableInvoke (temp, name, info.variable);
+					} else {
+						customVariableInvoke (temp, name, info.variable + info.offset [index]);
+					}
 				} else {
 					//invoke method based on event systems
 					customInvoke (temp, name);
@@ -98,12 +108,11 @@ public class MultiInput : MonoBehaviour {
 	}
 
 	void customObjectInvoke(keyInfo info) {
-		Debug.Log (info.privateFunctionName);
 		info.functionObject.SendMessage (info.privateFunctionName);
 	}
 
-	void customObjectVariableInvoke(keyInfo info) {
-		info.functionObject.SendMessage (info.privateFunctionName, info.variable);
+	void customObjectVariableInvoke(keyInfo info, float variable) {
+		info.functionObject.SendMessage (info.privateFunctionName, variable);
 	}
 }
 
@@ -117,10 +126,16 @@ public class keyInfo
 	public bool axisInput;
 	public string axis;
     public List<KeyCode> key;
+	public List<int> offset;
+	public List<keyInputType> keyType;
 	public UnityEvent keyEvent;
 	public GameObject functionObject;
 	public string privateFunctionName;
 	public bool privateFunction;
 	public bool variableInput;
 	public float variable;
+}
+
+public enum keyInputType {
+	getKey, getKeyDown, getKeyUp
 }
