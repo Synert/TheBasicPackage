@@ -10,8 +10,11 @@ public class PlayerController : MonoBehaviour
     public float jumpSpeed = 5;
     public float jumpDuration;
 	public bool isOnGround = false;
-	public float rotationSpeed = 1;
+
 	public bool rotateAroundObject = true;
+	public float rotationSpeed = 1;
+	public float resetJumpHeight = 1;
+	public Vector2 MinMaxZRot = new Vector2();
 
     public bool enableDoubleJump = true;
     public bool wallHitJump = true;
@@ -22,44 +25,32 @@ public class PlayerController : MonoBehaviour
     bool keyPressDown = false;
     bool canJumpVariable = false; 
 
-	Quaternion defaultRot = new Quaternion();
+	bool horizontal = false;
 
     void Start()
     {
 
-		defaultRot = transform.rotation;
-        rend = GetComponent<Renderer>();
+		rend = GetComponent<Renderer>();
+		GetComponent<BoxCollider2D> ().size = (GetComponent<SpriteRenderer> ().sprite.rect.size / 100);
 
     }
+
+	void inputs(float variable) {
+		if (variable < 0) {
+			if (GetComponent<Rigidbody2D> ().velocity.x > -this.MaxSpeed) {
+				GetComponent<Rigidbody2D> ().AddForce (new Vector2 (-this.Acceleration, 0.0f));
+			}
+		} else {
+			if (GetComponent<Rigidbody2D> ().velocity.x < this.MaxSpeed) {
+				GetComponent<Rigidbody2D> ().AddForce (new Vector2 (this.Acceleration, 0.0f));
+			}
+		}
+		horizontal = true;
+	}
 
 	// Update is called once per frame
 	void Update ()
     {
-        
-        float horizontal = Input.GetAxis("Horizontal");
-
-        if(horizontal < -0.1f)
-        {
-            if(GetComponent<Rigidbody2D>().velocity.x > -this.MaxSpeed)
-            {
-                GetComponent<Rigidbody2D>().AddForce(new Vector2(-this.Acceleration, 0.0f));
-            }
-            //else
-            //{
-            //    GetComponent<Rigidbody2D>().velocity = new Vector2(-this.MaxSpeed, GetComponent<Rigidbody2D>().velocity.y);
-            //}
-        }
-        else if(horizontal > 0.1f)
-        {
-            if (GetComponent<Rigidbody2D>().velocity.x < this.MaxSpeed)
-            {
-                GetComponent<Rigidbody2D>().AddForce(new Vector2(this.Acceleration, 0.0f));
-            }
-            //else
-            //{
-            //    GetComponent<Rigidbody2D>().velocity = new Vector2(this.MaxSpeed, GetComponent<Rigidbody2D>().velocity.y);
-            //}
-        }
 
         isOnGround = onGround();
 
@@ -81,7 +72,7 @@ public class PlayerController : MonoBehaviour
                     bool leftWallHit = onLeftWall();
                     bool rightWallHit = onRightWall();
 
-                    if (horizontal != 0)
+                    if (horizontal)
                     {
                         if (leftWallHit)
                         {
@@ -138,44 +129,79 @@ public class PlayerController : MonoBehaviour
         {
 
         }
+
+		horizontal = false;
     }
 
     private bool onGround()
     {
+		//arbitary length for search
         float checkLength = 0.5f;
-        float colliderThreshold = 0.001f;
 
-        Vector2 lineStart = new Vector2(this.transform.position.x, this.transform.position.y - rend.bounds.extents.y - colliderThreshold);
+		//bottom of players position (not relative to rotation)
+		Vector2 lineStart = new Vector2(this.transform.position.x, this.transform.position.y - ((GetComponent<SpriteRenderer> ().sprite.rect.size.y * (transform.lossyScale.y / 2)) / 100));
 
+		//end of seach line
         Vector2 searchVector = new Vector2(this.transform.position.x, lineStart.y - checkLength);
 
-		RaycastHit2D hit = Physics2D.Linecast(lineStart, searchVector);
+		//linecast all objects that intersect above
+		RaycastHit2D[] hitAll = Physics2D.LinecastAll(lineStart, searchVector);
 
+		//loop through all hits and return first object that isn't self
+		RaycastHit2D hit = new RaycastHit2D();
+		foreach (RaycastHit2D hi in hitAll) {
+			if (hi.transform != transform) {
+				hit = hi;
+				break;
+			}
+		}
+
+		//debug for search line
         Debug.DrawLine(lineStart, searchVector,Color.green);
-        //deal with rotating the character to match the object it is standing on
 
-        if (rotateAroundObject) {
+        //deal with rotating the character to match the object it is standing on
+		if (rotateAroundObject) {
+			//check if raycast hit anyting
 			if (hit) {
-				if (hit.transform.gameObject.layer == 13) {
-					if (transform.rotation.z != hit.transform.rotation.z) {
-						if (hit.transform.rotation.z > -0.3f && hit.transform.rotation.z < 0.3f) {
-							if (Mathf.Abs (transform.rotation.z - hit.transform.rotation.z) < 0.05f) {
-								transform.rotation = hit.transform.rotation;
-							} else {
-								Quaternion temp = transform.rotation;
-								temp.z = hit.transform.rotation.z / 4;
-								transform.rotation = temp;
-							}
-						}
+				
+				//get hit rotation and bring it in to search space
+				//makes it within -180 -> 180
+				Vector3 rot = hit.transform.rotation.eulerAngles;
+				while (rot.z < -180 || rot.z > 180) {
+					if (rot.z > 180) {
+						rot.z -= 180;
+					} else if (rot.z < -180) {
+						rot.z += 180;
 					}
 				}
-			} else {
+
+				//check if rotation is within accepted limits
+				if (rot.z > MinMaxZRot.x &&
+					rot.z < MinMaxZRot.y) {
+					//setup vector 3 for current rotation + hit's
+					Vector3 tempEular = transform.rotation.eulerAngles;
+					tempEular.z = rot.z;
+
+					//translate above position into quaternion and set rotation
+					Quaternion temp = Quaternion.Euler(tempEular);
+					transform.rotation = temp;
+				}
+				else {
+					//if hit rotation to large reset rotation
+					Quaternion temp = transform.rotation;
+					temp.z = 0;
+					transform.rotation = temp;
+				}
+			}
+			else {
+				//if no hit reset rotation
 				Quaternion temp = transform.rotation;
-				temp.z += (0 - transform.rotation.z * Time.deltaTime) * rotationSpeed;
+				temp.z = 0;
 				transform.rotation = temp;
 			}
 		}
 
+		//return true if hit exists
 		return hit;
     }
 
