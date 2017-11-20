@@ -7,6 +7,7 @@ public class Lootcrate : MonoBehaviour {
 	public bool genCrate = false;
 	public List<float> chance = new List<float>();
 	public int reward = 0;
+	public int maxChance = 10000;
 
 	void Update() {
 		if (genCrate) {
@@ -16,7 +17,7 @@ public class Lootcrate : MonoBehaviour {
 	}
 
 	public void generateCrate() {
-		float temp = Random.Range (0, 10000);
+		float temp = Random.Range (0, maxChance);
 		reward = -1;
 		for (int a = 0; a < chance.Count; a++) {
 			if (temp < chance[a]) {
